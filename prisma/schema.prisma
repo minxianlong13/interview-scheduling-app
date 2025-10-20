@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  timezone  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recruiter Recruiter?
+  candidate Candidate?
+}
+
+model Recruiter {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  slots     Slot[]
+  company   String?
+  title     String?
+
+  interviews Interview[]
+}
+
+model Candidate {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  phone     String?
+
+  interviews Interview[]
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  CANCELLED
+}
+
+model Slot {
+  id         String   @id @default(cuid())
+  startTime  DateTime
+  endTime    DateTime
+  status     SlotStatus @default(AVAILABLE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  recruiter  Recruiter @relation(fields: [recruiterId], references: [id])
+  recruiterId     String
+
+  bookedInterview Interview?
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum InterviewMode {
+  IN_PERSON
+  VIDEO
+  PHONE
+}
+
+model Interview {
+  id          String   @id @default(cuid())
+  recruiter   Recruiter @relation(fields: [recruiterId], references: [id])
+  recruiterId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  candidateId String
+  bookedSlot   Slot?   @relation(fields: [bookedSlotId], references: [id])
+  bookedSlotId String? @unique
+  title       String
+  description String?
+  location    String?
+  mode        InterviewMode
+  status      InterviewStatus @default(SCHEDULED)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
