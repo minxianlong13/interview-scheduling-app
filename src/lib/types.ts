@@ -9,8 +9,23 @@ export interface Recruiter extends User {
   company: string;
 }
 
-export interface Candidate extends User {
-  phoneNumber: string;
+export interface Candidate {
+  id: string;
+  user: User;
+  phone: string;
+}
+
+export enum InterviewMode {
+  IN_PERSON = "IN_PERSON",
+  VIDEO = "VIDEO",
+  PHONE = "PHONE",
+}
+
+export enum InterviewStatus {
+  SCHEDULED = "SCHEDULED",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+  RESCHEDULED = "RESCHEDULED",
 }
 
 export interface Slot {
@@ -20,4 +35,20 @@ export interface Slot {
   startTime: string; // ISO string
   endTime: string; // ISO string
   isBooked: boolean;
+}
+
+export interface Interview {
+  id: string;
+  recruiterId: string;
+  candidateId: string;
+  candidate?: Candidate;
+  title: string;
+  description: string;
+  location: string;
+  mode: InterviewMode;
+  status: InterviewStatus;
+  startTime: string; // ISO string
+  endTime: string; // ISO string
+  availableSlots: Slot[];
+  bookedSlotId?: string;
 }

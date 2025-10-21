@@ -24,59 +24,69 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type {
-  Recruiter,
-  TimeSlot,
+import {
   InterviewMode,
-  InterviewStatus,
+  type Recruiter,
+  type Slot,
+  type Candidate,
 } from "@/lib/types";
-import { format, parseISO } from "date-fns";
-import { Clock, MapPin, Video, Phone, UserIcon } from "lucide-react";
+import { format, parseISO, set } from "date-fns";
+import { Clock, UserIcon } from "lucide-react";
 
 interface CreateInterviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  recruiter: Recruiter;
+  recruiter: Recruiter | null;
   onInterviewCreated: () => void;
 }
 
-export function CreateInterviewDialog({
+function CreateInterviewDialog({
   open,
   onOpenChange,
   recruiter,
   onInterviewCreated,
-}: CreateInterviewDialogProps) {
+}: Readonly<CreateInterviewDialogProps>) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [mode, setMode] = useState<InterviewMode>("VIRTUAL");
-  const [status, setStatus] = useState<InterviewStatus>("SCHEDULED");
+  const [mode, setMode] = useState<InterviewMode>(InterviewMode.VIRTUAL);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedSlotId, setSelectedSlotId] = useState<string>("");
-  const [candidateName, setCandidateName] = useState("");
-  const [candidateEmail, setCandidateEmail] = useState("");
-  const [candidatePhone, setCandidatePhone] = useState("");
-  const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [selectedSlots, setSelectedSlots] = useState<Slot[]>([]);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>("");
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      loadSlots();
-    }
-  }, [open]);
 
   const loadSlots = async () => {
     try {
       const response = await fetch("/api/slots");
       const data = await response.json();
       const recruiterSlots = data.slots.filter(
-        (s: TimeSlot) => s.recruiterId === recruiter.id && !s.isBooked
+        (s: Slot) => s.recruiterId === recruiter?.id && !s.isBooked
       );
       setSlots(recruiterSlots);
     } catch (error) {
       console.error("Error loading slots:", error);
     }
   };
+
+  const loadCandidates = async () => {
+    try {
+      const response = await fetch("/api/candidates");
+      const data = await response.json();
+      console.log("Fetched candidates data:", data);
+      setCandidates(data.candidates as Candidate[]);
+    } catch (error) {
+      console.error("Error loading candidates:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      loadSlots();
+      loadCandidates();
+    }
+  }, [open]);
 
   const availableSlotsForDate = selectedDate
     ? slots.filter((slot) => {
@@ -96,31 +106,18 @@ export function CreateInterviewDialog({
     setLoading(true);
 
     try {
-      // Create candidate first
-      const candidateResponse = await fetch("/api/candidates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: candidateName,
-          email: candidateEmail,
-          phone: candidatePhone,
-        }),
-      });
-      const candidateData = await candidateResponse.json();
-
       // Create interview
       await fetch("/api/interviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recruiterId: recruiter.id,
-          candidateId: candidateData.candidate.id,
-          bookedSlotId: selectedSlotId || undefined,
+          recruiterId: recruiter?.id,
+          candidateId: selectedCandidateId || undefined,
+          availableSlots: selectedSlots,
           title,
           description,
           location,
           mode,
-          status,
         }),
       });
 
@@ -137,29 +134,15 @@ export function CreateInterviewDialog({
     setTitle("");
     setDescription("");
     setLocation("");
-    setMode("VIRTUAL");
-    setStatus("SCHEDULED");
+    setMode(InterviewMode.VIDEO);
     setSelectedDate(undefined);
-    setSelectedSlotId("");
-    setCandidateName("");
-    setCandidateEmail("");
-    setCandidatePhone("");
-  };
-
-  const getModeIcon = (mode: InterviewMode) => {
-    switch (mode) {
-      case "IN_PERSON":
-        return <MapPin className="w-4 h-4" />;
-      case "VIRTUAL":
-        return <Video className="w-4 h-4" />;
-      case "PHONE":
-        return <Phone className="w-4 h-4" />;
-    }
+    setSelectedSlots([]);
+    setSelectedCandidateId("");
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="min-w-4xl max-h-[120vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Interview</DialogTitle>
           <DialogDescription>
@@ -168,7 +151,7 @@ export function CreateInterviewDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {/* Left Column - Interview Details */}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -187,9 +170,9 @@ export function CreateInterviewDialog({
                 <Textarea
                   id="description"
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e: any) => setDescription(e.target.value)}
                   placeholder="Interview details, topics to cover, etc."
-                  rows={3}
+                  rows={4}
                 />
               </div>
 
@@ -199,11 +182,11 @@ export function CreateInterviewDialog({
                   value={mode}
                   onValueChange={(value) => setMode(value as InterviewMode)}
                 >
-                  <SelectTrigger id="mode">
+                  <SelectTrigger id="mode" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="VIRTUAL">Virtual</SelectItem>
+                    <SelectItem value="VIDEO">Video</SelectItem>
                     <SelectItem value="IN_PERSON">In Person</SelectItem>
                     <SelectItem value="PHONE">Phone</SelectItem>
                   </SelectContent>
@@ -226,63 +209,33 @@ export function CreateInterviewDialog({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={status}
-                  onValueChange={(value) => setStatus(value as InterviewStatus)}
-                >
-                  <SelectTrigger id="status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                    <SelectItem value="RESCHEDULED">Rescheduled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="border-t pt-4 space-y-4">
                 <h3 className="font-semibold flex items-center gap-2">
                   <UserIcon className="w-4 h-4" />
                   Candidate Information
                 </h3>
                 <div className="space-y-2">
-                  <Label htmlFor="candidateName">Candidate Name *</Label>
-                  <Input
-                    id="candidateName"
-                    value={candidateName}
-                    onChange={(e) => setCandidateName(e.target.value)}
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="candidateEmail">Candidate Email *</Label>
-                  <Input
-                    id="candidateEmail"
-                    type="email"
-                    value={candidateEmail}
-                    onChange={(e) => setCandidateEmail(e.target.value)}
-                    placeholder="john@example.com"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="candidatePhone">Candidate Phone</Label>
-                  <Input
-                    id="candidatePhone"
-                    value={candidatePhone}
-                    onChange={(e) => setCandidatePhone(e.target.value)}
-                    placeholder="+1 234 567 8900"
-                  />
+                  <Label htmlFor="candidate">Candidate Name *</Label>
+                  <Select
+                    value={selectedCandidateId}
+                    onValueChange={(value) => setSelectedCandidateId(value)}
+                  >
+                    <SelectTrigger id="candidate" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {candidates.map((candidate) => (
+                        <SelectItem key={candidate.id} value={candidate.id}>
+                          {candidate.user.name} ({candidate.user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Slot Selection */}
+            {/* Middle Column - Calendar Selection */}
             <div className="space-y-4">
               <div>
                 <Label>Assign Time Slot (Optional)</Label>
@@ -294,18 +247,20 @@ export function CreateInterviewDialog({
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   className="rounded-md border"
+                  disabled={[{ before: new Date() }, { dayOfWeek: [0, 6] }]}
                   modifiers={{
                     hasSlots: datesWithSlots,
                   }}
-                  modifiersStyles={{
-                    hasSlots: {
-                      fontWeight: "bold",
-                      textDecoration: "underline",
-                    },
+                  modifiersClassNames={{
+                    hasSlots: "bg-blue-500 text-white rounded-full",
+                    today: "text-blue-500 font-semibold underline", // optional: style today's date too,
                   }}
                 />
               </div>
+            </div>
 
+            {/* Right Column - Calendar Selection */}
+            <div className="space-y-4">
               {selectedDate && availableSlotsForDate.length > 0 && (
                 <div className="space-y-2">
                   <Label>
@@ -316,11 +271,19 @@ export function CreateInterviewDialog({
                       <Card
                         key={slot.id}
                         className={`cursor-pointer transition-colors ${
-                          selectedSlotId === slot.id
+                          selectedSlots.includes(slot)
                             ? "border-primary bg-primary/5"
                             : "hover:border-primary/50"
                         }`}
-                        onClick={() => setSelectedSlotId(slot.id)}
+                        onClick={() => {
+                          if (selectedSlots.includes(slot)) {
+                            setSelectedSlots(
+                              selectedSlots.filter((s) => s !== slot)
+                            );
+                          } else {
+                            setSelectedSlots([...selectedSlots, slot]);
+                          }
+                        }}
                       >
                         <CardContent className="p-3">
                           <div className="flex items-center justify-between">
@@ -365,3 +328,5 @@ export function CreateInterviewDialog({
     </Dialog>
   );
 }
+
+export default CreateInterviewDialog;

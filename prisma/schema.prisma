@@ -66,7 +66,8 @@ model Slot {
   recruiter  Recruiter @relation(fields: [recruiterId], references: [id])
   recruiterId     String
 
-  bookedInterview Interview?
+  bookedInterview Interview? @relation("BookedSlot")
+  availableForInterviews Interview[] @relation("AvailableSlots")
 }
 
 enum InterviewStatus {
@@ -88,8 +89,9 @@ model Interview {
   recruiterId String
   candidate   Candidate @relation(fields: [candidateId], references: [id])
   candidateId String
-  bookedSlot   Slot?   @relation(fields: [bookedSlotId], references: [id])
+  bookedSlot   Slot?   @relation("BookedSlot", fields: [bookedSlotId], references: [id])
   bookedSlotId String? @unique
+  availableSlots Slot[] @relation("AvailableSlots")
   title       String
   description String?
   location    String?

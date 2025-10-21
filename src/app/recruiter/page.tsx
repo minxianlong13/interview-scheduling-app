@@ -5,26 +5,31 @@ import { Plus, Users, AlarmClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TimeSlotPanel from "./time-slot-panel";
-import CreateSlotDialog from "@/components/create-slot";
-import { Recruiter, Slot } from "@/lib/types";
+import CreateSlotDialog from "@/components/create-slot-dialog";
+import CreateInterviewDialog from "@/components/create-interview-dialog";
+import { Recruiter, Slot, Interview } from "@/lib/types";
 import { getUserTimezone } from "@/lib/timezones";
+import { InterviewsList } from "@/components/interviews-list";
 
 const RecruiterPage = () => {
   const [recruiter, setRecruiter] = useState<Recruiter | null>(null);
+  const [interviews, setInterviews] = useState<Interview[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
+  const [showCreateInterviewDialog, setShowCreateInterviewDialog] =
+    useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadRecruiter();
     loadSlots();
+    loadInterviews();
   }, []);
 
   const loadRecruiter = async () => {
     try {
       const response = await fetch("/api/recruiters");
       const data = await response.json();
-      console.log("Fetched recruiter data:", data);
       if (data.recruiters && data.recruiters.length > 0) {
         setRecruiter({
           ...data.recruiters[0],
@@ -36,6 +41,18 @@ const RecruiterPage = () => {
       console.error("Error loading recruiter:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadInterviews = async () => {
+    try {
+      const response = await fetch("/api/interviews");
+      const data = await response.json();
+      if (data.interviews) {
+        setInterviews(data.interviews);
+      }
+    } catch (error) {
+      console.error("Error loading interviews:", error);
     }
   };
 
@@ -63,6 +80,12 @@ const RecruiterPage = () => {
     setShowCreateSlotModal(false);
   };
 
+  const handleInterviewCreated = () => {
+    // Refresh interviews or give feedback
+    loadInterviews();
+    setShowCreateInterviewDialog(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -86,7 +109,11 @@ const RecruiterPage = () => {
               </p>
             </div>
             <div className="flex items-center justify-center gap-4">
-              <Button onClick={() => {}} size="lg" className="w-40">
+              <Button
+                onClick={() => setShowCreateInterviewDialog(true)}
+                size="lg"
+                className="w-40"
+              >
                 <Plus className="w-4 h-4" />
                 Interview
               </Button>
@@ -121,7 +148,11 @@ const RecruiterPage = () => {
             {/* Tabs content */}
             <TabsContent value="recruiter" className="p-6">
               <div className="text-center text-gray-700">
-                Recruiter view content goes here.
+                <InterviewsList
+                  interviews={interviews}
+                  slots={recruiterSlots}
+                  onDelete={() => {}}
+                />
               </div>
             </TabsContent>
 
@@ -143,6 +174,13 @@ const RecruiterPage = () => {
         onOpenChange={setShowCreateSlotModal}
         recruiter={recruiter}
         onSlotCreated={handleSlotCreated}
+      />
+
+      <CreateInterviewDialog
+        open={showCreateInterviewDialog}
+        onOpenChange={setShowCreateInterviewDialog}
+        recruiter={recruiter}
+        onInterviewCreated={handleInterviewCreated}
       />
     </div>
   );
