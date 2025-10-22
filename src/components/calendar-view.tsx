@@ -62,11 +62,12 @@ function CalendarView({ slots, timezone, onDelete }: CalendarViewProps) {
             mode="single"
             selected={selectedDate}
             onSelect={setSelectedDate}
+            disabled={[{ before: new Date() }, { dayOfWeek: [0, 6] }]}
             modifiers={{
               hasSlots: (date) => datesWithSlots.has(date.toDateString()),
             }}
             modifiersClassNames={{
-              hasSlots: "bg-primary/10 font-semibold",
+              hasSlots: "bg-primary/20 font-semibold",
             }}
             className="rounded-md border"
           />

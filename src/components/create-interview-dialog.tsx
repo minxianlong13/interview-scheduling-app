@@ -30,7 +30,7 @@ import {
   type Slot,
   type Candidate,
 } from "@/lib/types";
-import { format, parseISO, set } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Clock, UserIcon } from "lucide-react";
 
 interface CreateInterviewDialogProps {

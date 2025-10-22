@@ -16,7 +16,10 @@ export function Navbar() {
 
           <div className="flex items-center gap-4">
             <Link href="/recruiter">
-              <Button variant="ghost">Dashboard</Button>
+              <Button variant="ghost">Recruiter</Button>
+            </Link>
+            <Link href="/candidate">
+              <Button variant="ghost">Candidate</Button>
             </Link>
             <Link href="/recruiter">
               <Button>Get Started</Button>

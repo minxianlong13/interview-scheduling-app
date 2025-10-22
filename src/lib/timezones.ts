@@ -1,10 +1,5 @@
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
+import { isBefore } from "date-fns";
 import { Slot } from "./types";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 export function formatTimeInTimezone(
   isoString: string,
@@ -53,11 +48,16 @@ export function getUserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-export function isSlotConflict(slot1: Slot, slot2: Slot) {
-  const start1 = dayjs.tz(`${slot1.startTime}`, slot1.timeZone);
-  const end1 = dayjs.tz(`${slot1.endTime}`, slot1.timeZone);
-  const start2 = dayjs.tz(`${slot2.startTime}`, slot2.timeZone);
-  const end2 = dayjs.tz(`${slot2.endTime}`, slot2.timeZone);
+export function isSlotConflict(
+  slot1: Slot,
+  startTime: string,
+  endTime: string
+): boolean {
+  const start1 = new Date(slot1.startTime);
+  const end1 = new Date(slot1.endTime);
+  const start2 = new Date(startTime);
+  const end2 = new Date(endTime);
 
-  return start1.isBefore(end2) && start2.isBefore(end1);
+  // Two intervals overlap if each starts before the other ends
+  return isBefore(start1, end2) && isBefore(start2, end1);
 }

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Interview, Slot } from "@/lib/types";
+import type { Interview } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import {
   Calendar,
@@ -11,31 +11,28 @@ import {
   MapPin,
   Video,
   Phone,
-  Trash2,
   User,
   ChevronRight,
+  FilePenLine,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { DeleteButton } from "./delete-button";
 
 interface InterviewsListProps {
   interviews: Interview[];
-  slots: Slot[];
+  isRecruiterView?: boolean;
   onDelete: (interviewId: string) => void;
 }
 
 export function InterviewsList({
   interviews,
-  slots,
+  isRecruiterView = true,
   onDelete,
 }: Readonly<InterviewsListProps>) {
   const router = useRouter();
 
   console.log("InterviewsList interviews:", interviews);
-
-  const getSlotById = (slotId?: string) => {
-    if (!slotId) return null;
-    return slots.find((s) => s.id === slotId);
-  };
 
   const getModeIcon = (mode: string) => {
     switch (mode) {
@@ -66,7 +63,7 @@ export function InterviewsList({
   };
 
   const handleInterviewClick = (interviewId: string) => {
-    router.push(`/interview/${interviewId}`);
+    router.push(`/interview/${interviewId}?isRecruiter=${isRecruiterView}`);
   };
 
   if (interviews.length === 0) {
@@ -83,13 +80,10 @@ export function InterviewsList({
   return (
     <div className="space-y-4">
       {interviews.map((interview) => {
-        const slot = getSlotById(interview.bookedSlotId);
-
         return (
           <Card
             key={interview.id}
             className="cursor-pointer hover:bg-accent/50 transition-colors"
-            onClick={() => handleInterviewClick(interview.id)}
           >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-4">
@@ -122,34 +116,58 @@ export function InterviewsList({
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Button
-                    variant="ghost"
-                    size="icon"
+                    className="flex items-center gap-2"
+                    size="sm"
                     onClick={(e) => {
+                      e.stopPropagation();
+                      toast.info("Edit interview feature coming soon!");
+                    }}
+                  >
+                    <FilePenLine className="w-4 h-4" />
+                    Edit
+                  </Button>
+                  <DeleteButton
+                    onConfirm={(e) => {
                       e.stopPropagation();
                       onDelete(interview.id);
                     }}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                  />
+                  <ChevronRight
+                    onClick={() => handleInterviewClick(interview.id)}
+                    className="w-5 h-5 text-muted-foreground"
+                  />
                 </div>
               </div>
             </CardHeader>
-            {slot && (
+
+            {/** The interview is booked */}
+            {interview.bookedSlotId && (
               <CardContent className="pt-0">
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-4 h-4" />
                     <span>
-                      {format(parseISO(slot.startTime), "MMM d, yyyy")}
+                      {interview.bookedSlot &&
+                        format(
+                          parseISO(interview.bookedSlot.startTime),
+                          "MMM d, yyyy"
+                        )}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="w-4 h-4" />
                     <span>
-                      {format(parseISO(slot.startTime), "h:mm a")} -{" "}
-                      {format(parseISO(slot.endTime), "h:mm a")}
+                      {interview.bookedSlot &&
+                        format(
+                          parseISO(interview.bookedSlot.startTime),
+                          "h:mm a"
+                        )}{" "}
+                      -{" "}
+                      {interview.bookedSlot &&
+                        format(
+                          parseISO(interview.bookedSlot.endTime),
+                          "h:mm a"
+                        )}
                     </span>
                   </div>
                 </div>

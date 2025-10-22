@@ -5,7 +5,10 @@ export interface User {
   timezone: string;
 }
 
-export interface Recruiter extends User {
+export interface Recruiter {
+  id: string;
+  user: User;
+  title: string;
   company: string;
 }
 
@@ -40,6 +43,7 @@ export interface Slot {
 export interface Interview {
   id: string;
   recruiterId: string;
+  recruiter?: Recruiter;
   candidateId: string;
   candidate?: Candidate;
   title: string;
@@ -51,4 +55,5 @@ export interface Interview {
   endTime: string; // ISO string
   availableSlots: Slot[];
   bookedSlotId?: string;
+  bookedSlot?: Slot;
 }

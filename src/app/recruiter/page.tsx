@@ -7,42 +7,23 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import TimeSlotPanel from "./time-slot-panel";
 import CreateSlotDialog from "@/components/create-slot-dialog";
 import CreateInterviewDialog from "@/components/create-interview-dialog";
-import { Recruiter, Slot, Interview } from "@/lib/types";
+import { Slot, Interview } from "@/lib/types";
 import { getUserTimezone } from "@/lib/timezones";
-import { InterviewsList } from "@/components/interviews-list";
+import { useUserContext } from "@/hooks/useUserContext";
+import InterviewPanel from "./interview-panel";
 
 const RecruiterPage = () => {
-  const [recruiter, setRecruiter] = useState<Recruiter | null>(null);
+  const { recruiter, loading } = useUserContext();
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [showCreateSlotModal, setShowCreateSlotModal] = useState(false);
   const [showCreateInterviewDialog, setShowCreateInterviewDialog] =
     useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadRecruiter();
     loadSlots();
     loadInterviews();
   }, []);
-
-  const loadRecruiter = async () => {
-    try {
-      const response = await fetch("/api/recruiters");
-      const data = await response.json();
-      if (data.recruiters && data.recruiters.length > 0) {
-        setRecruiter({
-          ...data.recruiters[0],
-          name: data.recruiters[0].user.name,
-          email: data.recruiters[0].user.email,
-        });
-      }
-    } catch (error) {
-      console.error("Error loading recruiter:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadInterviews = async () => {
     try {
@@ -65,7 +46,6 @@ const RecruiterPage = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data.slots.map((slot: any) => ({
           ...slot,
-          timeZone: slot.recruiter.timezone,
           isBooked: slot.status.toUpperCase() !== "AVAILABLE",
         })) || []
       );
@@ -75,15 +55,26 @@ const RecruiterPage = () => {
   };
 
   const handleSlotCreated = () => {
-    // Refresh slots or give feedback
     loadSlots();
     setShowCreateSlotModal(false);
   };
 
   const handleInterviewCreated = () => {
-    // Refresh interviews or give feedback
     loadInterviews();
     setShowCreateInterviewDialog(false);
+  };
+
+  const handleInterviewDelete = async (id: string) => {
+    try {
+      const response = await fetch(`/api/interviews/${id}`, {
+        method: "DELETE",
+      });
+
+      console.log("Delete response status:", response.status);
+      loadInterviews();
+    } catch (error) {
+      console.error("Error deleting interview:", error);
+    }
   };
 
   if (loading) {
@@ -105,7 +96,8 @@ const RecruiterPage = () => {
             <div>
               <h1 className="text-3xl font-bold">Recruiter Dashboard</h1>
               <p className="text-muted-foreground mt-1">
-                {recruiter?.name} • {recruiter?.timezone ?? defaultTimezone}
+                {recruiter?.user.name} •{" "}
+                {recruiter?.user.timezone ?? defaultTimezone}
               </p>
             </div>
             <div className="flex items-center justify-center gap-4">
@@ -148,10 +140,9 @@ const RecruiterPage = () => {
             {/* Tabs content */}
             <TabsContent value="recruiter" className="p-6">
               <div className="text-center text-gray-700">
-                <InterviewsList
+                <InterviewPanel
                   interviews={interviews}
-                  slots={recruiterSlots}
-                  onDelete={() => {}}
+                  onDelete={handleInterviewDelete}
                 />
               </div>
             </TabsContent>
@@ -160,7 +151,7 @@ const RecruiterPage = () => {
               <div className="text-center text-gray-700">
                 <TimeSlotPanel
                   slots={recruiterSlots}
-                  timezone={recruiter?.timezone || defaultTimezone}
+                  timezone={recruiter?.user.timezone || defaultTimezone}
                 />
               </div>
             </TabsContent>
@@ -173,6 +164,7 @@ const RecruiterPage = () => {
         open={showCreateSlotModal}
         onOpenChange={setShowCreateSlotModal}
         recruiter={recruiter}
+        slots={recruiterSlots}
         onSlotCreated={handleSlotCreated}
       />
 

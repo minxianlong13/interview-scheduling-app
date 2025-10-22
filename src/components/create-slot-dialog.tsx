@@ -8,13 +8,16 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Recruiter } from "@/lib/types";
+import { Recruiter, Slot } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { isSlotConflict } from "@/lib/timezones";
 
 interface CreateSlotDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recruiter: Recruiter | null;
+  slots: Slot[];
   onSlotCreated: () => void;
 }
 
@@ -22,6 +25,7 @@ const CreateSlotDialog = ({
   open,
   onOpenChange,
   recruiter,
+  slots,
   onSlotCreated,
 }: CreateSlotDialogProps) => {
   const [date, setDate] = React.useState("");
@@ -38,8 +42,21 @@ const CreateSlotDialog = ({
     const startDateTime = new Date(`${date}T${startTime}:00`);
     const endDateTime = new Date(`${date}T${endTime}:00`);
 
+    if (
+      slots.some((slot) =>
+        isSlotConflict(
+          slot,
+          startDateTime.toISOString(),
+          endDateTime.toISOString()
+        )
+      )
+    ) {
+      toast.error("Time slot conflicts with existing slots");
+      return;
+    }
+
     if (endDateTime <= startDateTime) {
-      alert("End time must be after start time");
+      toast.error("End time must be after start time");
       return;
     }
 
@@ -64,7 +81,7 @@ const CreateSlotDialog = ({
       }
     } catch (error) {
       console.error("Error creating slot:", error);
-      alert("Failed to create slot");
+      toast.error("Failed to create slot");
     } finally {
       setLoading(false);
     }

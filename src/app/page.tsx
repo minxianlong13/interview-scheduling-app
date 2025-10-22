@@ -23,11 +23,22 @@ export default function Home() {
             Create available time slots, manage your interview calendar, and
             keep track of all your scheduled interviews in one place.
           </p>
-          <Link href="/recruiter">
-            <Button size="lg" className="text-lg px-8">
-              Go to Dashboard
-            </Button>
-          </Link>
+          <div className="flex gap-4 justify-center">
+            <Link href="/recruiter">
+              <Button size="lg" className="text-lg px-8">
+                Recruiter Dashboard
+              </Button>
+            </Link>
+            <Link href="/candidate">
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 bg-transparent"
+              >
+                Candidate Dashboard
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
