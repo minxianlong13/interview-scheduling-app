@@ -41,6 +41,7 @@ export default function InterviewDetailsPage() {
 
   useEffect(() => {
     loadInterview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interviewId]);
 
   const loadInterview = async () => {
@@ -58,31 +59,6 @@ export default function InterviewDetailsPage() {
   const handleInterviewEdited = async () => {};
   const handleInterviewCancel = async () => {
     router.back();
-  };
-
-  const handleBookSlot = async () => {
-    if (!selectedSlotId) return;
-
-    setBooking(true);
-    try {
-      const response = await fetch(`/api/interviews/${interviewId}/book`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slotId: selectedSlotId,
-          candidateTimezone: getUserTimezone(),
-        }),
-      });
-
-      if (response.ok) {
-        await loadInterview();
-        setSelectedSlotId("");
-      }
-    } catch (error) {
-      console.error("Error booking slot:", error);
-    } finally {
-      setBooking(false);
-    }
   };
 
   const getModeIcon = (mode: InterviewMode) => {
@@ -262,7 +238,7 @@ export default function InterviewDetailsPage() {
                   <p className="text-sm">
                     {format(parseISO(interview.bookedSlot.startTime), "h:mm a")}{" "}
                     - {format(parseISO(interview.bookedSlot.endTime), "h:mm a")}{" "}
-                    ({interview.bookedSlot.recruiterTimezone})
+                    ({interview.bookedSlot.timeZone})
                   </p>
                 </div>
               </div>
@@ -344,7 +320,6 @@ export default function InterviewDetailsPage() {
                 <div className="flex items-center justify-end gap-2">
                   <Button
                     onClick={handleInterviewEdited}
-                    disabled={selectedSlotId}
                     className="w-30"
                     size="lg"
                   >

@@ -49,7 +49,7 @@ function CreateInterviewDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [mode, setMode] = useState<InterviewMode>(InterviewMode.VIRTUAL);
+  const [mode, setMode] = useState<InterviewMode>(InterviewMode.VIDEO);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlots, setSelectedSlots] = useState<Slot[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -86,6 +86,7 @@ function CreateInterviewDialog({
       loadSlots();
       loadCandidates();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const availableSlotsForDate = selectedDate
@@ -170,7 +171,9 @@ function CreateInterviewDialog({
                 <Textarea
                   id="description"
                   value={description}
-                  onChange={(e: any) => setDescription(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setDescription(e.target.value)
+                  }
                   placeholder="Interview details, topics to cover, etc."
                   rows={4}
                 />
@@ -200,7 +203,7 @@ function CreateInterviewDialog({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder={
-                    mode === "VIRTUAL"
+                    mode === "VIDEO"
                       ? "Zoom/Teams link"
                       : mode === "IN_PERSON"
                       ? "Office address"

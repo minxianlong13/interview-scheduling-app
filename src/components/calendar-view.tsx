@@ -8,8 +8,9 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Calendar } from "./ui/calendar";
-import { Badge, Clock, Trash2 } from "lucide-react";
+import { Clock, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import {
   formatDateInTimezone,
   formatTimeOnlyInTimezone,
