@@ -28,7 +28,7 @@ export enum InterviewStatus {
   SCHEDULED = "SCHEDULED",
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
-  RESCHEDULED = "RESCHEDULED",
+  CONFIRMED = "CONFIRMED",
 }
 
 export interface Slot {

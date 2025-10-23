@@ -48,6 +48,7 @@ export default function InterviewDetailsPage() {
     try {
       const response = await fetch(`/api/interviews/${interviewId}`);
       const data = await response.json();
+      console.log("Loaded interview data:", data);
       setInterview(data.interview);
     } catch (error) {
       console.error("Error loading interview:", error);
@@ -59,6 +60,32 @@ export default function InterviewDetailsPage() {
   const handleInterviewEdited = async () => {};
   const handleInterviewCancel = async () => {
     router.back();
+  };
+
+  const handleInterviewBook = async () => {
+    if (!selectedSlotId || !interview) return;
+
+    try {
+      const response = await fetch(`/api/interviews/${interview.id}/book`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          interviewId: interview.id,
+          slotId: selectedSlotId,
+        }),
+      });
+
+      if (response.ok) {
+        loadInterview();
+        router.refresh();
+      } else {
+        console.error("Failed to book slot");
+      }
+    } catch (error) {
+      console.error("Error booking slot:", error);
+    }
   };
 
   const getModeIcon = (mode: InterviewMode) => {
@@ -91,7 +118,7 @@ export default function InterviewDetailsPage() {
         return "bg-green-500";
       case "CANCELLED":
         return "bg-red-500";
-      case "RESCHEDULED":
+      case "CONFIRMED":
         return "bg-yellow-500";
       default:
         return "bg-gray-500";
@@ -124,7 +151,16 @@ export default function InterviewDetailsPage() {
   const availableSlots = interview.availableSlots.filter(
     (slot) => !slot.isBooked
   );
-  const isBooked = !!interview.bookedSlot;
+
+  const getTimezone = () => {
+    if (isRecruiterView) {
+      return interview.recruiter?.user.timezone || getUserTimezone();
+    } else {
+      return interview.candidate?.user.timezone || getUserTimezone();
+    }
+  };
+
+  console.log("Interview bookedSlot:", getTimezone());
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4">
@@ -212,7 +248,7 @@ export default function InterviewDetailsPage() {
         </Card>
 
         {/* Booked Slot */}
-        {isBooked && interview.bookedSlot && (
+        {!!interview.bookedSlot && (
           <Card className="border-green-200 bg-green-50">
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -236,9 +272,18 @@ export default function InterviewDetailsPage() {
                     )}
                   </p>
                   <p className="text-sm">
-                    {format(parseISO(interview.bookedSlot.startTime), "h:mm a")}{" "}
-                    - {format(parseISO(interview.bookedSlot.endTime), "h:mm a")}{" "}
-                    ({interview.bookedSlot.timeZone})
+                    {formatInTimeZone(
+                      interview.bookedSlot.startTime,
+                      getTimezone(),
+                      "h:mm a"
+                    )}{" "}
+                    -{" "}
+                    {formatInTimeZone(
+                      interview.bookedSlot.endTime,
+                      getTimezone(),
+                      "h:mm a"
+                    )}
+                    ({getTimezone()})
                   </p>
                 </div>
               </div>
@@ -247,7 +292,7 @@ export default function InterviewDetailsPage() {
         )}
 
         {/* Available Slots */}
-        {!isBooked && availableSlots.length > 0 && (
+        {!interview.bookedSlot && availableSlots.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Assigned Time Slots</CardTitle>
@@ -287,23 +332,18 @@ export default function InterviewDetailsPage() {
                                 <span>
                                   {formatInTimeZone(
                                     startTime,
-                                    interview.recruiter?.user.timezone ||
-                                      getUserTimezone(),
+                                    getTimezone(),
                                     "h:mm a"
                                   )}{" "}
                                   -{" "}
                                   {formatInTimeZone(
                                     endTime,
-                                    interview.recruiter?.user.timezone ||
-                                      getUserTimezone(),
+                                    getTimezone(),
                                     "h:mm a"
                                   )}
                                 </span>
                               </div>
-                              <Badge variant="outline">
-                                {interview.recruiter?.user.timezone ||
-                                  getUserTimezone()}
-                              </Badge>
+                              <Badge variant="outline">{getTimezone()}</Badge>
                             </div>
                           </div>
                           {isSelected && (
@@ -335,11 +375,30 @@ export default function InterviewDetailsPage() {
                   </Button>
                 </div>
               )}
+              {!isRecruiterView && (
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    onClick={handleInterviewBook}
+                    className="w-30"
+                    size="lg"
+                  >
+                    Book
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={handleInterviewCancel}
+                    size="lg"
+                    className="w-30"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {!isBooked && availableSlots.length === 0 && (
+        {!interview.bookedSlot && availableSlots.length === 0 && (
           <Card>
             <CardHeader>
               <CardTitle>No Available Slots</CardTitle>

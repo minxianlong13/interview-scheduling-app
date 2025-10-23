@@ -53,9 +53,9 @@ export function InterviewsList({
         return "default";
       case "COMPLETED":
         return "secondary";
-      case "CANCELLED":
+      case "CONFIRMED":
         return "destructive";
-      case "RESCHEDULED":
+      case "CANCELLED":
         return "outline";
       default:
         return "default";

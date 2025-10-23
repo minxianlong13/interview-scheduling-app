@@ -27,6 +27,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     // Handle interview creation logic here
+    console.log("Creating interview with data:", body);
     const newInterview = await prisma.interview.create({
       data: {
         title: body.title,
